@@ -1,0 +1,25 @@
+# 环境变量（含 API Key）
+.env
+
+# Agent 工作区（运行时数据）
+.agent_workspace/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
