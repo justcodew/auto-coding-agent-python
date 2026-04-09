@@ -75,5 +75,6 @@ class StateManager:
     def save_current_task(cls, task: dict):
         """保存当前任务"""
         task_file = config.WORKSPACE_DIR / "tasks" / "current.json"
+        task_file.parent.mkdir(parents=True, exist_ok=True)
         with open(task_file, "w", encoding="utf-8") as f:
             json.dump(task, f, indent=2, ensure_ascii=False)
