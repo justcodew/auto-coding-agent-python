@@ -4,6 +4,9 @@
 # Agent 工作区（运行时数据）
 .agent_workspace/
 
+# 日志文件
+*.log
+
 # Python
 __pycache__/
 *.py[cod]

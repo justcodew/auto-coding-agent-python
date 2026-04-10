@@ -3,6 +3,10 @@ import json
 from pathlib import Path
 from typing import Tuple, Optional
 
+from .logger import get_logger
+
+logger = get_logger(__name__)
+
 
 def parse_meta_from_response(response: str) -> Tuple[str, Optional[dict]]:
     """
@@ -25,7 +29,7 @@ def parse_meta_from_response(response: str) -> Tuple[str, Optional[dict]]:
                 meta = json.loads(meta_str_fixed)
                 return main_content, meta
             except json.JSONDecodeError:
-                print("⚠️ 元数据 JSON 解析失败")
+                logger.warning("元数据 JSON 解析失败")
                 return response, None
     return response, None
 

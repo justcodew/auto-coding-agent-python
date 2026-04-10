@@ -13,11 +13,14 @@ import config
 from core.state_manager import StateManager
 from core.sentry_checks import SentryCheck
 from core.llm_client import llm_client
+from core.logger import setup_logger, get_logger
 
 from skills.planner import run_planner
 from skills.coder import run_coder
 from skills.debugger import run_debugger
 from skills.reviewer import run_reviewer
+
+logger = get_logger(__name__)
 
 
 def print_banner():
@@ -58,6 +61,7 @@ def run_single_cycle():
     # 死循环检测
     loop_detected, loop_msg = SentryCheck.detect_loop()
     if loop_detected:
+        logger.error("死循环检测触发: %s", loop_msg)
         print(f"\n⚠️⚠️⚠️ {loop_msg}")
         print("建议人工介入，查看决策日志。")
         print(f"决策日志位置: {config.WORKSPACE_DIR / 'state.json'}")
@@ -67,6 +71,7 @@ def run_single_cycle():
         if phase == "planning":
             ok, msg = SentryCheck.check_before_planner()
             if not ok:
+                logger.warning("Planner 前置检查失败: %s", msg)
                 print(f"❌ Planner 前置检查失败: {msg}")
                 return False
             run_planner()
@@ -74,6 +79,7 @@ def run_single_cycle():
         elif phase == "coding":
             ok, msg = SentryCheck.check_before_coder()
             if not ok:
+                logger.warning("Coder 前置检查失败: %s", msg)
                 print(f"❌ Coder 前置检查失败: {msg}")
                 if "回退到 planning" in msg:
                     StateManager.update(current_phase="planning")
@@ -83,6 +89,7 @@ def run_single_cycle():
         elif phase == "debugging":
             ok, msg = SentryCheck.check_before_debugger()
             if not ok:
+                logger.warning("Debugger 前置检查失败: %s", msg)
                 print(f"❌ Debugger 前置检查失败: {msg}")
                 StateManager.update(current_phase="coding")
                 return False
@@ -91,12 +98,14 @@ def run_single_cycle():
         elif phase == "reviewing":
             ok, msg = SentryCheck.check_before_reviewer()
             if not ok:
+                logger.warning("Reviewer 前置检查失败: %s", msg)
                 print(f"❌ Reviewer 前置检查失败: {msg}")
                 StateManager.update(current_phase="debugging")
                 return False
             run_reviewer()
 
         elif phase == "completed":
+            logger.info("所有任务已完成")
             print("\n🎉🎉🎉 所有任务已完成！")
             return False
 
@@ -107,6 +116,7 @@ def run_single_cycle():
         return True
 
     except Exception as e:
+        logger.exception("执行出错: %s", e)
         print(f"\n❌ 执行出错: {e}")
         import traceback
         traceback.print_exc()
@@ -115,6 +125,9 @@ def run_single_cycle():
 
 def run_continuous(max_cycles: int = 10, delay: int = 2):
     """连续运行多个周期"""
+    # 初始化日志系统（控制台 + 文件）
+    setup_logger("agent", log_file="agent.log")
+
     print_banner()
 
     for cycle in range(1, max_cycles + 1):

@@ -2,10 +2,13 @@ import config
 from core.llm_client import llm_client
 from core.state_manager import StateManager
 from core.file_utils import parse_meta_from_response, save_file, save_meta, read_file
+from core.logger import get_logger
+
+logger = get_logger(__name__)
 
 def run_planner():
     """执行 Planner Skill"""
-    print("\n📋 [Planner] 开始制定开发计划...")
+    logger.info("[Planner] 开始制定开发计划...")
     
     # 读取输入
     task = StateManager.get_current_task()
@@ -75,5 +78,5 @@ def run_planner():
         "key_interpretation": meta.get("key_interpretation", "") if meta else ""
     })
     
-    print(f"✅ [Planner] 计划已保存至 {plan_path}")
+    logger.info("[Planner] 计划已保存至 %s", plan_path)
     return main_content

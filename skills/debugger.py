@@ -6,6 +6,9 @@ from core.file_utils import (
     parse_meta_from_response, save_file, save_meta,
     read_file, load_meta
 )
+from core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def generate_error_signature(error_description: str) -> str:
@@ -17,7 +20,7 @@ def generate_error_signature(error_description: str) -> str:
 
 def run_debugger():
     """执行 Debugger Skill"""
-    print("\n🔍 [Debugger] 开始审查代码...")
+    logger.info("[Debugger] 开始审查代码...")
 
     state = StateManager.load()
 
@@ -86,7 +89,7 @@ def run_debugger():
     else:
         # meta 解析失败时，尝试从文本推断
         verdict = "passed" if "通过" in main_content and "失败" not in main_content else "failed"
-        print("⚠️ [Debugger] 元数据解析失败，从文本推断判定结果")
+        logger.warning("[Debugger] 元数据解析失败，从文本推断判定结果")
 
     # 使用程序化指纹（确定性，不受 LLM 输出格式影响）
     error_signature = generate_error_signature(main_content[:200]) if verdict == "failed" else ""
@@ -96,7 +99,7 @@ def run_debugger():
             current_phase="reviewing",
             last_error_signature=None
         )
-        print("✅ [Debugger] 代码验证通过！")
+        logger.info("[Debugger] 代码验证通过！")
     else:
         # 检查是否陷入循环
         last_error = state.get("last_error_signature")
@@ -121,9 +124,9 @@ def run_debugger():
         )
 
         if consecutive >= config.LOOP_DETECTION_THRESHOLD:
-            print(f"⚠️ [Debugger] 警告：连续 {consecutive} 次相同错误，可能陷入死循环！")
+            logger.warning("[Debugger] 连续 %d 次相同错误，可能陷入死循环！", consecutive)
         else:
-            print(f"❌ [Debugger] 发现问题，将重新编码 (第 {new_retry_count} 次重试)")
+            logger.warning("[Debugger] 发现问题，将重新编码 (第 %d 次重试)", new_retry_count)
 
     StateManager.append_decision_trail({
         "agent": "Debugger",

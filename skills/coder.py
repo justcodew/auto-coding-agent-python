@@ -5,11 +5,14 @@ from core.file_utils import (
     parse_meta_from_response, parse_code_files,
     save_file, save_meta, read_file, load_meta
 )
+from core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def run_coder():
     """执行 Coder Skill"""
-    print("\n💻 [Coder] 开始生成代码...")
+    logger.info("[Coder] 开始生成代码...")
 
     state = StateManager.load()
 
@@ -121,13 +124,13 @@ Reviewer 评审驳回报告：
     for filepath, content in files.items():
         full_path = config.WORKSPACE_DIR / filepath
         save_file(full_path, content)
-        print(f"   📄 已保存: {filepath}")
+        logger.info("[Coder] 已保存: %s", filepath)
 
     if not files:
         # 如果没有解析出文件，保存原始响应
         raw_path = config.WORKSPACE_DIR / "code" / f"raw_response_v{version}.txt"
         save_file(raw_path, main_content)
-        print(f"   ⚠️ 未解析到文件格式，原始响应已保存至 {raw_path}")
+        logger.warning("[Coder] 未解析到文件格式，原始响应已保存至 %s", raw_path)
 
     # 保存元数据
     coder_meta_path = config.WORKSPACE_DIR / "code" / f"coder_v{version}.md"
@@ -144,5 +147,5 @@ Reviewer 评审驳回报告：
         "addressed_feedback": meta.get("addressed_feedback", "") if meta else ""
     })
 
-    print(f"✅ [Coder] 代码生成完成 (版本 {version}, 总周期 {total_cycles})")
+    logger.info("[Coder] 代码生成完成 (版本 %d, 总周期 %d)", version, total_cycles)
     return main_content

@@ -5,11 +5,14 @@ from core.file_utils import (
     parse_meta_from_response, save_file, save_meta,
     read_file, load_meta
 )
+from core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def run_reviewer():
     """执行 Reviewer Skill"""
-    print("\n👀 [Reviewer] 开始最终评审...")
+    logger.info("[Reviewer] 开始最终评审...")
 
     # 读取输入
     task = StateManager.get_current_task()
@@ -78,13 +81,13 @@ def run_reviewer():
     else:
         # meta 解析失败时，尝试从文本推断
         decision = "approved" if "批准" in main_content and "修改" not in main_content else "changes_requested"
-        print("⚠️ [Reviewer] 元数据解析失败，从文本推断判定结果")
+        logger.warning("[Reviewer] 元数据解析失败，从文本推断判定结果")
 
     state = StateManager.load()
 
     if decision == "approved":
         StateManager.update(current_phase="completed")
-        print("🎉 [Reviewer] 评审通过！代码可以合并。")
+        logger.info("[Reviewer] 评审通过！代码可以合并。")
     else:
         # 不再重置 retry_count，改为递增 review_reject_count
         review_reject_count = state.get("review_reject_count", 0) + 1
@@ -92,7 +95,7 @@ def run_reviewer():
             current_phase="coding",
             review_reject_count=review_reject_count
         )
-        print(f"⚠️ [Reviewer] 需要修改 (第 {review_reject_count} 次驳回)，将重新进入编码阶段。")
+        logger.warning("[Reviewer] 需要修改 (第 %d 次驳回)，将重新进入编码阶段。", review_reject_count)
 
     StateManager.append_decision_trail({
         "agent": "Reviewer",
