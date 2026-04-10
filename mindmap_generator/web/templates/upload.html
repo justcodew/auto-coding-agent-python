@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF 脑图生成器</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+               background: #f5f5f5; color: #333; min-height: 100vh; display: flex;
+               align-items: center; justify-content: center; }
+        .container { background: white; border-radius: 12px; padding: 40px;
+                     box-shadow: 0 2px 12px rgba(0,0,0,0.1); max-width: 500px; width: 90%; }
+        h1 { font-size: 24px; margin-bottom: 8px; }
+        p.desc { color: #666; margin-bottom: 24px; font-size: 14px; }
+        label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; }
+        .upload-area { border: 2px dashed #ccc; border-radius: 8px; padding: 32px;
+                       text-align: center; cursor: pointer; margin-bottom: 20px;
+                       transition: border-color 0.2s; }
+        .upload-area:hover { border-color: #4a90d9; }
+        .upload-area input { display: none; }
+        .upload-area .hint { color: #999; font-size: 13px; margin-top: 8px; }
+        .format-group { margin-bottom: 20px; }
+        .format-group label { display: inline-block; margin-right: 16px; font-weight: normal; }
+        .format-group input[type="radio"] { margin-right: 4px; }
+        button { width: 100%; padding: 12px; background: #4a90d9; color: white;
+                 border: none; border-radius: 8px; font-size: 16px; cursor: pointer;
+                 font-weight: 600; transition: background 0.2s; }
+        button:hover { background: #3a7bc8; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .result { margin-top: 20px; padding: 16px; background: #f0f9f0; border-radius: 8px;
+                  display: none; }
+        .result a { color: #4a90d9; text-decoration: none; font-weight: 600; }
+        .result a:hover { text-decoration: underline; }
+        .error { margin-top: 20px; padding: 16px; background: #fef0f0; border-radius: 8px;
+                 color: #c00; display: none; }
+        #filename { font-weight: 600; color: #4a90d9; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PDF 脑图生成器</h1>
+        <p class="desc">上传 PDF 文件，自动生成脑图（XMind/FreeMind/Markdown）</p>
+
+        <form id="uploadForm">
+            <label>选择 PDF 文件</label>
+            <div class="upload-area" id="dropZone">
+                <input type="file" id="fileInput" name="file" accept=".pdf" required>
+                <div id="fileLabel">点击或拖拽 PDF 文件到此处</div>
+                <div class="hint">支持 .pdf 格式</div>
+            </div>
+
+            <label>输出格式</label>
+            <div class="format-group">
+                <label><input type="radio" name="format" value="xmind" checked> XMind</label>
+                <label><input type="radio" name="format" value="freemind"> FreeMind</label>
+                <label><input type="radio" name="format" value="markdown"> Markdown</label>
+            </div>
+
+            <button type="submit" id="submitBtn">生成脑图</button>
+        </form>
+
+        <div class="result" id="result">
+            生成成功! <a id="downloadLink" href="#">点击下载</a>
+        </div>
+        <div class="error" id="error"></div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileLabel = document.getElementById('fileLabel');
+        const form = document.getElementById('uploadForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const result = document.getElementById('result');
+        const errorDiv = document.getElementById('error');
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.style.borderColor = '#4a90d9'; });
+        dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = '#ccc'; });
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.style.borderColor = '#ccc';
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                fileLabel.textContent = e.dataTransfer.files[0].name;
+            }
+        });
+        fileInput.addEventListener('change', () => {
+            fileLabel.textContent = fileInput.files[0]?.name || '点击选择文件';
+        });
+
+        form.addEventListener('submit', async e => {
+            e.preventDefault();
+            result.style.display = 'none';
+            errorDiv.style.display = 'none';
+            submitBtn.disabled = true;
+            submitBtn.textContent = '处理中...';
+
+            const formData = new FormData(form);
+            try {
+                const resp = await fetch('/upload', { method: 'POST', body: formData });
+                const data = await resp.json();
+                if (data.error) {
+                    errorDiv.textContent = data.error;
+                    errorDiv.style.display = 'block';
+                } else {
+                    document.getElementById('downloadLink').href = '/download/' + data.task_id;
+                    result.style.display = 'block';
+                }
+            } catch (err) {
+                errorDiv.textContent = '网络错误: ' + err.message;
+                errorDiv.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '生成脑图';
+            }
+        });
+    </script>
+</body>
+</html>
